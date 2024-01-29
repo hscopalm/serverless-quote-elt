@@ -1,0 +1,74 @@
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  PullQuote:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: !Sub
+        - Stack ${AWS::StackName} Function ${ResourceName}
+        - ResourceName: PullQuote
+      CodeUri: src/Function
+      Handler: handler.handler
+      Runtime: python3.11
+      MemorySize: 1024
+      Timeout: 10
+      Tracing: Active
+      Environment:
+        Variables:
+          QUOTES_TABLE_NAME: !Ref Quotes
+          QUOTES_TABLE_ARN: !GetAtt Quotes.Arn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Quotes
+  PullQuoteLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${PullQuote}
+  Quotes:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: 'N'
+        - AttributeName: created_at
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+        - AttributeName: created_at
+          KeyType: RANGE
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+  PullQuoteSchedule:
+    Type: AWS::Scheduler::Schedule
+    Properties:
+      ScheduleExpression: rate(5 minutes)
+      FlexibleTimeWindow:
+        Mode: 'OFF'
+      Target:
+        Arn: !GetAtt PullQuote.Arn
+        RoleArn: !GetAtt PullQuoteScheduleToPullQuoteRole.Arn
+  PullQuoteScheduleToPullQuoteRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: !Sub scheduler.${AWS::URLSuffix}
+          Action: sts:AssumeRole
+          Condition:
+            ArnLike:
+              aws:SourceArn: !Sub
+                - arn:${AWS::Partition}:scheduler:${AWS::Region}:${AWS::AccountId}:schedule/*/${AWS::StackName}-${ResourceId}-*
+                - ResourceId: PullQuoteSchedule
+      Policies:
+        - PolicyName: StartExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !GetAtt PullQuote.Arn
