@@ -1,0 +1,10 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "serverless-quote-elt"
+region = "aws-east-1"
+s3_bucket="serverless-quote-elt"
+s3_prefix="cfn/sam_deploy"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
