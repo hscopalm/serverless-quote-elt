@@ -10,10 +10,10 @@ def get_quotes():
     return response
 
 # what the lambda runs
-def lambda_handler():
+def lambda_handler(event, context):
     quote_obj = get_quotes().json()
 
-    for quote in quote_arr:
+    for quote in quote_obj:
         print(quote)
         
     return quote_obj
