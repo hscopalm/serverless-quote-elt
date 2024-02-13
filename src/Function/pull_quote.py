@@ -1,5 +1,4 @@
 import requests
-from datetime import datetime
 
 # url to hit, pulls a random quote according to params passed
 url = 'https://api.quotable.io/quotes/random'
