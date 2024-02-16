@@ -164,8 +164,8 @@ resource "aws_lambda_function" "pull_quote_lambda" {
 resource "aws_dynamodb_table" "quotes_raw" {
   name           = "quotes_raw"
   billing_mode   = "PROVISIONED"
-  read_capacity  = 20
-  write_capacity = 20
+  read_capacity  = 5
+  write_capacity = 5
   hash_key       = "quote_id"
   range_key      = "ingested_at"
 
