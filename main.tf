@@ -1,30 +1,9 @@
 ##################################################################################
 ### first, create the EventBridge Schedule
 
-resource "aws_scheduler_schedule" "cron" {
-  name        = "PullQuote_Schedule"
-  group_name  = "default"
-
-  flexible_time_window {
-    mode = "OFF"
-  }
-
-  schedule_expression = "cron(*/1 * * * ? *)" # run every 30 minutes
-
-  target {
-    arn      = aws_lambda_function.terraform_lambda_func.arn # arn of the lambda
-    # role that allows scheduler to start the task (explained later)
-    role_arn = aws_iam_role.scheduler.arn
-
-    retry_policy {
-      maximum_event_age_in_seconds = 300
-      maximum_retry_attempts       = 10
-    }
-  }
-}
-
-resource "aws_iam_role" "scheduler" {
-  name = "cron-scheduler-role"
+resource "aws_iam_role" "pull_quote_scheduler_role" {
+  name               = "pull_quote_scheduler_role"
+  description        = "The IAM role for the EventBridge Scheduler to assume"
   assume_role_policy = <<EOF
 {
  "Version": "2012-10-17",
@@ -42,35 +21,63 @@ resource "aws_iam_role" "scheduler" {
 EOF
 }
 
-resource "aws_iam_role_policy_attachment" "scheduler" {
-  policy_arn = aws_iam_policy.scheduler.arn
-  role       = aws_iam_role.scheduler.name
+# define the policy document that will apply to the IAM role (best practice to not use heredoc / jsonencode)
+data "aws_iam_policy_document" "pull_quote_scheduler_policy_document" {
+  statement {
+    sid = "1"
+
+    actions = [
+      "lambda:InvokeFunction"
+    ]
+
+    resources = [
+      aws_lambda_function.pull_quote_lambda.arn
+    ]
+  }
 }
 
-resource "aws_iam_policy" "scheduler" {
-  name = "cron-scheduler-policy"
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": [
-        "lambda:InvokeFunction"
-      ],
-      "Effect": "Allow",
-      "Resource": "arn:aws:lambda:*:*:*"
-    }
-  ]
+resource "aws_iam_policy" "pull_quote_scheduler_iam_policy" {
+  name        = "pull_quote_scheduler_iam_policy"
+  description = "The policy that will apply to the EventBridge Scheduler Role"
+  policy      = data.aws_iam_policy_document.pull_quote_scheduler_policy_document.json
 }
-EOF
+
+# what policy will define the permissions associated with the IAM role above
+resource "aws_iam_role_policy_attachment" "pull_quote_scheduler_policy_attachment" {
+  policy_arn = aws_iam_policy.pull_quote_scheduler_iam_policy.arn
+  role       = aws_iam_role.pull_quote_scheduler_role.name
+}
+
+# create the actual event bridge schedule
+resource "aws_scheduler_schedule" "pull_quote_schedule" {
+  name        = "pull_quote_schedule"
+  description = "The EventBridge Scedule that will trigger the PullQuote Lambda, scheduled via cron/rate syntax"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  # schedule_expression = "cron(*/1 * * * ? *)" # run every 1 minute, cron syntax
+  schedule_expression = "rate(1 minutes)" # run every 1 minute, rate syntax (valid inputs are minutes, hours, days)
+
+  target {
+    arn = aws_lambda_function.pull_quote_lambda.arn # arn of the lambda
+
+    role_arn = aws_iam_role.pull_quote_scheduler_role.arn # role that allows scheduler to start the task
+
+    retry_policy {
+      maximum_retry_attempts = 0 # don't retry
+    }
+  }
 }
 
 ##################################################################################
 ### next, we create the lambda and all associated roles/policies/applications
 
 # what role will the lambda act under
-resource "aws_iam_role" "lambda_role" {
-  name   = "PullQuote_Lambda_Role"
+resource "aws_iam_role" "pull_quote_lambda_role" {
+  name               = "pull_quote_lambda_role"
+  description        = "The IAM role for the PullQuote lambda to act under"
   assume_role_policy = <<EOF
 {
  "Version": "2012-10-17",
@@ -88,62 +95,72 @@ resource "aws_iam_role" "lambda_role" {
 EOF
 }
 
-# what policy will define the permissions associated with the IAM role above
-resource "aws_iam_policy" "iam_policy_for_lambda" { 
-  name         = "aws_iam_policy_for_terraform_aws_lambda_role"
-  description  = "AWS IAM Policy for managing aws lambda role"
-  policy = <<EOF
-{
- "Version": "2012-10-17",
- "Statement": [
-    {
-      "Action": [
-        "logs:CreateLogGroup",
-        "logs:CreateLogStream",
-        "logs:PutLogEvents"
-      ],
-      "Resource": "arn:aws:logs:*:*:*",
-      "Effect": "Allow"
-    },
-    {
-      "Action": [
-        "dynamodb:PutItem"
-      ],
-      "Effect": "Allow",
-      "Resource": "arn:aws:dynamodb:*:*:*"
-    }
- ]
+# define the policy document that will apply to the IAM role (best practice to not use heredoc / jsonencode)
+data "aws_iam_policy_document" "pull_quote_lambda_policy_document" {
+  statement {
+    sid = "1"
+
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents"
+    ]
+
+    resources = [
+      "arn:aws:logs:*:*:*"
+    ]
+  }
+
+  statement {
+    sid = "2"
+
+    actions = [
+      "dynamodb:PutItem"
+    ]
+
+    resources = [
+      aws_dynamodb_table.quotes_raw.arn
+    ]
+  }
 }
-EOF
+
+
+# what policy will define the permissions associated with the IAM role above
+resource "aws_iam_policy" "pull_quote_lambda_iam_policy" {
+  name        = "pull_quote_lambda_iam_policy"
+  description = "The policy that will attach to the lambda role. Governs what our lambda can actually do to other aws services"
+  policy      = data.aws_iam_policy_document.pull_quote_lambda_policy_document.json
 }
 
 # attach the policy to the role
-resource "aws_iam_role_policy_attachment" "attach_iam_policy_to_iam_role" {
-  role        = aws_iam_role.lambda_role.name
-  policy_arn  = aws_iam_policy.iam_policy_for_lambda.arn
+resource "aws_iam_role_policy_attachment" "pull_quote_lamda_policy_attachment" {
+  role       = aws_iam_role.pull_quote_lambda_role.name
+  policy_arn = aws_iam_policy.pull_quote_lambda_iam_policy.arn
 }
 
 # zip the python to allow upload to aws lambda
-data "archive_file" "lambda_resources_zip" {
+data "archive_file" "pull_quote_lambda_zip" {
   type        = "zip"
   output_path = "${path.module}/pull_quote.zip"
-  source_dir  = "${path.module}/src/Function/"
+  source_dir  = "${path.module}/lambda_function/"
 }
 
 # create the lambda resource
-resource "aws_lambda_function" "terraform_lambda_func" {
-  filename                       = "${path.module}/pull_quote.zip"
-  function_name                  = "PullQuote_Lambda"
-  source_code_hash               = "${data.archive_file.lambda_resources_zip.output_base64sha256}"
-  role                           = aws_iam_role.lambda_role.arn
-  handler                        = "pull_quote.lambda_handler"
-  runtime                        = "python3.11"
-  depends_on                     = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
+resource "aws_lambda_function" "pull_quote_lambda" {
+  function_name    = "pull_quote"
+  description      = "Lambda function to grab quote(s) from the quotable API, and store in our dynamodb table quotes_raw"
+  role             = aws_iam_role.pull_quote_lambda_role.arn
+  filename         = "${path.module}/pull_quote.zip"
+  handler          = "pull_quote.lambda_handler"
+  runtime          = "python3.11"
+  depends_on       = [aws_iam_role_policy_attachment.pull_quote_lamda_policy_attachment]
+  source_code_hash = data.archive_file.pull_quote_lambda_zip.output_base64sha256 # ensures terraform recognizes changed to zip payload as changes
 }
 
 ##################################################################################
-### last, we create the dynamodb table and all associated roles/policies/applications
+### lastly, we create the dynamodb table and all associated roles/policies/applications
 
+# (nearly) raw table of quotes in the ethos of ELT (as opposed to ETL)
 resource "aws_dynamodb_table" "quotes_raw" {
   name           = "quotes_raw"
   billing_mode   = "PROVISIONED"
@@ -163,7 +180,8 @@ resource "aws_dynamodb_table" "quotes_raw" {
   }
 
   tags = {
-    Name        = "dynamodb-table-1"
-    Environment = "production"
+    name  = "quotes_raw"
+    level = "raw"
+    repo  = "serverless-quote-elt"
   }
 }
