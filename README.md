@@ -66,19 +66,26 @@ The setup is simple, so follow along if you care to :)
    git clone https://github.com/hscopalm/serverless-quote-elt.git
    cd .\serverless-quote-elt\
    ```
-3. Verify terraform is installed
+3. Create a venv, activate it, install packagages, and install into the lambda target
+   ```
+   python -m venv serverless-quote-elt-venv
+   .\Scripts\Activate.ps1
+   pip install -r requirements.txt
+   pip install -target .\lambda_function\ -r .\lambda_function\lambda_requirements.txt
+   ```
+4. Verify terraform is installed
    `terraform --version`
-4. Initialize terraform to create tf files, and prep for deploying resources
+5. Initialize terraform to create tf files, and prep for deploying resources
    `terraform init`
-5. Plan and inspect the result of `main.tf`
+6. Plan and inspect the result of `main.tf`
    `terraform plan`
    Make sure the resources in my script are what you want, and that they won't blow your budget
-6. Apply the plan
+7. Apply the plan
    `terraform apply`, followed by `yes` once prompted
    Terraform will now begin managing your state, and keep it up to date if you make changes
-7. Navigate to the Schedule, Lambda, DynamoDB table, and CloudWatch Logs
+8. Navigate to the Schedule, Lambda, DynamoDB table, and CloudWatch Logs
    Verify they have been created as expected, and watch the logs populate with some fun quotes!
-8. If you want to kill the resources, run `terraform destroy`
+9.  If you want to kill the resources, run `terraform destroy`
 
 ## Credits
 The only resource directly used by this project (other than AWS services) is the [quotable API](https://github.com/lukePeavey/quotable), started by Luke Peavey. Thanks for the resource Luke!
