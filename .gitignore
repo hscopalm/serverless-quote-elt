@@ -165,6 +165,7 @@ cython_debug/
 /.terraform
 .terraform.*
 terraform.tfstate*
-/lambda_function/*
-!/lambda_function/lambda_requirements.txt
-!/lambda_function/pull_quote.py
+/*lambda_function/*
+!/*lambda_function/lambda_requirements.txt
+!/*lambda_function/pull_quote.py
+!/*lambda_function/transform_quotes.py
