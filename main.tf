@@ -142,7 +142,7 @@ resource "aws_iam_role_policy_attachment" "pull_quote_lamda_policy_attachment" {
 data "archive_file" "pull_quote_lambda_zip" {
   type        = "zip"
   output_path = "${path.module}/pull_quote.zip"
-  source_dir  = "${path.module}/lambda_function/"
+  source_dir  = "${path.module}/pull_quote_lambda_function/"
 }
 
 # create the lambda resource
@@ -166,11 +166,11 @@ resource "aws_dynamodb_table" "quotes_raw" {
   billing_mode   = "PROVISIONED"
   read_capacity  = 5
   write_capacity = 5
-  hash_key       = "quote_id"
+  hash_key       = "ingested_date"
   range_key      = "ingested_at"
 
   attribute {
-    name = "quote_id"
+    name = "ingested_date"
     type = "S"
   }
 

@@ -22,13 +22,14 @@ def parse_quotes():
         print(quote)
 
         transformed_quote = {
+            "ingested_date": pendulum.now("UTC").to_date_string(),  # partition key
+            "ingested_at": str(pendulum.now("UTC")),  # sort key
             "quote_id": quote["_id"],
             "content": quote["content"],
             "author": quote["author"],
             "tag_list": quote["tags"],
             "author_slug": quote["authorSlug"],
             "character_count": quote["length"],
-            "ingested_at": str(pendulum.now("UTC")),
             "added_date": quote["dateAdded"],
             "modified_date": quote["dateModified"],
         }
@@ -47,8 +48,7 @@ def put_table_item(table, item):
 
 # what the lambda runs
 def lambda_handler(event, context):
-    # construct the client to the DynamoDB service
-    client = boto3.client("dynamodb")
+    # instantiate the resource to interact with the DynamoDB service API
     db = boto3.resource("dynamodb")
 
     # Table instance
