@@ -169,3 +169,4 @@ terraform.tfstate*
 !/*lambda_function/lambda_requirements.txt
 !/*lambda_function/pull_quote.py
 !/*lambda_function/transform_quotes.py
+!/*lambda_function/quotes.json
