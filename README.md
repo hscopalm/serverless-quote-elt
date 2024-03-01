@@ -15,6 +15,26 @@ All of the infrastracture is created and modified via IaC (infrastructure as cod
 
 This project is entirely free to run on the AWS "Always Free Tier", assuming you don't have heavy load across DynamoDB, Lambda, or EventBridge Scheduler elsewhere that takes you over the limit.
 
+## Purpose
+Ultimately, there is not much point beyond being a teaching resource, and demonstrating best practices across a fairly modern stack (or at least a slice of one). I will continue to build out the stack over time, to make a more holistic stack following the same "cheap, fast, serverless" ethos.
+
+## Table of Contents
+- [Introduction](#introduction)
+- [Purpose](#purpose)
+- [Table of Contents](#table-of-contents)
+- [Architecture](#architecture)
+    - [Technologies Used](#technologies-used)
+    - [Explained in a bit more verbose way](#explained-in-a-bit-more-verbose-way)
+- [API Used](#api-used)
+- [Setting Up the Project](#setting-up-the-project)
+- [Credits](#credits)
+- [License](#license)
+
+## Architecture
+Below is a diagram describing the high-level architecture
+
+![Architecture Diagram](architecture_diagram.jpg)
+
 #### Technologies Used
 - DuckDB
 - Terraform (IaC)
@@ -26,31 +46,7 @@ This project is entirely free to run on the AWS "Always Free Tier", assuming you
 - AWS IAM
   - Roles
   - Policies
-
-
-## Table of Contents
-- [Introduction](#introduction)
-    - [Technologies Used](#technologies-used)
-- [Table of Contents](#table-of-contents)
-- [Purpose](#purpose)
-- [Architecture](#architecture)
-    - [Explained in a bit more verbose way](#explained-in-a-bit-more-verbose-way)
-- [API Used](#api-used)
-- [Setting Up the Project](#setting-up-the-project)
-- [Credits](#credits)
-- [License](#license)
-
-
-
-## Purpose
-Ultimately, there is not much point beyond being a teaching resource, and demonstrating best practices across a fairly modern stack (or at least a slice of one). I will continue to build out the stack over time, to make a more holistic stack following the same "cheap, fast, serverless" ethos.
-
-
-## Architecture
-Below is a diagram describing the high-level architecture
-
-![Architecture Diagram](architecture_diagram.jpg)
-
+  
 #### Explained in a bit more verbose way
 We effectively have two Lambda functions (`pull_quote` and `transform_quotes`) handling the heavy lifting and all of the compute. 
 
