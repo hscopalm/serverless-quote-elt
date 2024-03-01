@@ -37,7 +37,7 @@ def parse_quotes():
     return transformed_quote
 
 
-# Function to put an entry into the DynamoDB table
+# function to put an entry into the DynamoDB table
 def put_table_item(table, item):
     response = table.put_item(Item=item)
 
@@ -54,6 +54,8 @@ def lambda_handler(event, context):
     # Table instance
     table = db.Table("quotes_raw")
 
+    # get the quote
     quote = parse_quotes()
 
+    # write the quote to the table
     put_table_item(table, quote)
