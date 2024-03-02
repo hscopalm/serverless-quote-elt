@@ -27,13 +27,14 @@ Ultimately, there is not much point beyond being a teaching resource, and demons
     - [Explained in a bit more verbose way](#explained-in-a-bit-more-verbose-way)
 - [API Used](#api-used)
 - [Setting Up the Project](#setting-up-the-project)
+- [Expected Output](#expected-output)
 - [Credits](#credits)
 - [License](#license)
 
 ## Architecture
 Below is a diagram describing the high-level architecture
 
-![Architecture Diagram](architecture_diagram.jpg)
+![Architecture Diagram](resources/architecture_diagram.jpg)
 
 #### Technologies Used
 - DuckDB
@@ -108,6 +109,21 @@ Note: the below is for Windows, which will be *nearly* identical, but you will n
 8. Navigate to the Schedule, Lambda, DynamoDB table, and CloudWatch Logs
    Verify they have been created as expected, and watch the logs populate with some fun quotes!
 9.  If you want to kill the resources, run `terraform destroy`
+
+## Expected Output
+A sample run output is included below. Of course, this will change based on the day! Only a sample of rows from each table are displayed.
+```
+The most common quote ingested yesterday was: "You cannot step twice into the same river, for other waters are continually flowing in." by Heraclitus
+For the quotes ingested yesterday, the distribution of quote counts is:
+Minimum # of ingestions = 1
+Maximum # of ingestions = 4
+Range = 3
+Variance = 0.36935479453477904
+Standard Deviation = 0.6077456659942373
+Total Distinct Quotes = 1029
+```
+
+![Transform Quotes Output](resources/transform_quotes_output.png)
 
 ## Credits
 The only resource directly used by this project (other than AWS services) is the [quotable API](https://github.com/lukePeavey/quotable), started by Luke Peavey. Thanks for the resource Luke!

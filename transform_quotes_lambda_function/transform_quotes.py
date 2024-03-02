@@ -106,7 +106,6 @@ def lambda_handler(event, context):
 
     # let's print out some descriptive statistics
     print("For the quotes ingested yesterday, the distribution of quote counts is:")
-    print("Measures of Dispersion")
     print("Minimum # of ingestions =", min)
     print("Maximum # of ingestions =", max)
     print("Range =", range)
