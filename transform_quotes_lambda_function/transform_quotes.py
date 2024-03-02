@@ -32,7 +32,9 @@ def dump_to_json(response, file_name):
     """
     quotes = json.dumps(response["Items"], indent=2)
 
-    file_path = os.path.join(os.path.dirname(__file__), file_name)
+    file_path = os.path.join(
+        "/tmp", file_name
+    )  # save the JSON file to /tmp in the Lambda environment
 
     with open(file_path, "w") as outfile:
         outfile.write(quotes)
@@ -61,13 +63,6 @@ def transform_quotes():
     duckdb.sql("CREATE TABLE quotes_agg AS {sql}".format(sql=quotes_agg))
 
 
-def cleanup():
-    """
-    Clean up the JSON file
-    """
-    os.remove("quotes.json")
-
-
 # what the lambda runs
 def lambda_handler(event, context):
     # instantiate the resource to interact with the DynamoDB service API
@@ -91,7 +86,7 @@ def lambda_handler(event, context):
     print(duckdb.sql("SELECT * FROM quotes_agg;"))
 
     # what was the most common quote ingested yesterday?
-    top_quote = duckdb.sql("SELECT * FROM quotes_agg limit 1;").fetchdf()
+    top_quote = duckdb.sql("SELECT * FROM quotes_agg limit 1;").fetchnumpy()
     quote_distribution = duckdb.sql("SELECT quote_count FROM quotes_agg").fetchnumpy()[
         "quote_count"
     ]
@@ -105,7 +100,7 @@ def lambda_handler(event, context):
 
     print(
         'The most common quote ingested yesterday was: "{}" by {}'.format(
-            top_quote["quote_text"].values[0], top_quote["author"].values[0]
+            top_quote["quote_text"][0], top_quote["author"][0]
         )
     )
 
@@ -118,7 +113,5 @@ def lambda_handler(event, context):
     print("Variance =", variance)
     print("Standard Deviation =", sd)
     print("Total Distinct Quotes =", len(quote_distribution))
-
-    cleanup()
 
     return "Quotes transformed successfully!"

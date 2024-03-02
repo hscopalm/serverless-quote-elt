@@ -81,7 +81,7 @@ resource "aws_scheduler_schedule" "transform_quotes_schedule" {
     mode = "OFF"
   }
 
-  schedule_expression = "cron(0 0,6,12,18 * * ? *)" # run every 6 hours, cron syntax
+  schedule_expression = "cron(0 12 * * ? *)" # run every day at noon UTC, cron syntax
   # schedule_expression = "rate(1 minutes)" # run every 1 minute, rate syntax (valid inputs are minutes, hours, days)
 
   target {
@@ -140,6 +140,7 @@ data "aws_iam_policy_document" "quote_lambda_policy_document" {
 
     actions = [
       "dynamodb:PutItem"
+      , "dynamodb:Query"
     ]
 
     resources = [
@@ -217,6 +218,7 @@ resource "aws_lambda_function" "transform_quotes_lambda" {
   role             = aws_iam_role.quote_lambda_role.arn
   filename         = data.archive_file.transform_quotes_lambda_zip.output_path
   handler          = "transform_quotes.lambda_handler"
+  timeout          = 15 # seconds
   runtime          = "python3.12"
   architectures    = ["x86_64"]
   depends_on       = [aws_iam_role_policy_attachment.quote_lamda_policy_attachment]

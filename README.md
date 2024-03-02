@@ -69,6 +69,8 @@ After perusing [this list of public API's](https://github.com/public-apis/public
 ## Setting Up the Project
 The setup is simple, so follow along if you care to :)
 
+Note: the below is for Windows, which will be *nearly* identical, but you will need to adjust paths, and venv activation to suit your platform
+
 1. Dependencies
    `Terraform` - allows for IaC deployment of AWS resources
    `AWS account` - hopefully you are a root user (but use a different IAM user!!) and can manage the necessary permissions, or you have a role with sufficient perms already
@@ -80,15 +82,19 @@ The setup is simple, so follow along if you care to :)
    git clone https://github.com/hscopalm/serverless-quote-elt.git
    cd .\serverless-quote-elt\
    ```
-3. Create a venv, activate it, install packagages, and install into the lambda target
+3. Create a venv, activate it, install packagages, and install into the lambda layer, and duckdb into the only lambda to use it, `transform_quotes`
    ```
    python -m venv serverless-quote-elt-venv
    .\Scripts\Activate.ps1
    pip install -r requirements.txt
    mkdir .\serverless-quote-elt-venv\lambda-layer-site-packages
    mkdir .\serverless-quote-elt-venv\lambda-layer-site-packages\python
-   pip install -target .\serverless-quote-elt-venv\lambda-layer-site-packages\python -r requirements.txt
+   pip install --platform manylinux2014_x86_64 --only-binary=:all: --target .\serverless-quote-elt-venv\lambda-layer-site-packages\python\ -r requirements_lambda_layer.txt
+   pip install --platform manylinux2014_x86_64 --only-binary=:all: --target .\transform_quotes_lambda_function\  -r requirements_transform_quotes_lambda.txt
    ```
+   There is some added complexity to the package installation due to both having compiled binary libraries (like duckDB), as well as the runtime in Lambda being Linux
+   Note the `--platform manylinux2014_x86_64 --only-binary=:all:`, which allows us to install these as if for another platform. If you don't do this, you will have errors such as `ModuleNotFoundError: No module named 'duckdb.duckdb'` despite correctly installing it into the zip / layer
+   [Read here](https://repost.aws/knowledge-center/lambda-python-package-compatible) for more info on the amazon solution to this
 4. Verify terraform is installed
    `terraform --version`
 5. Initialize terraform to create tf files, and prep for deploying resources
